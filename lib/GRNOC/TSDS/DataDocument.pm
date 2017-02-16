@@ -248,7 +248,7 @@ sub replace {
                                    updated => time(),
                                    values => $values );
 
-    $data_collection->update( $query, $fields );
+    $data_collection->update_one( $query, $fields );
 
     return $self;
 }

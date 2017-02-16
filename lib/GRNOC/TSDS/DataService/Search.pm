@@ -219,7 +219,7 @@ sub search {
         my $db = $self->mongo_ro()->get_database($measurement_type);
 
         # get the flat list of this measurement types' meta fields
-        my $metadata = $db->get_collection( 'metadata' )->find_one({});
+        my $metadata = $db->get_collection( 'metadata' )->find_one([]);
         if(!defined($metadata)){
             log_info("$measurement_type has no metadata collection, skipping...");
             next;
