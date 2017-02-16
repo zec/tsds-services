@@ -1521,7 +1521,7 @@ sub _query_database {
                 if ($floored != $start || $ceiled != $end){
 
                     log_debug("Changing start from $start to $floored due to aggregation $extent");
-                    log_debug("Changing start from $end to $ceiled due to aggregation $extent");
+                    log_debug("Changing end from $end to $ceiled due to aggregation $extent");
 
                     $start = $floored;
                     $end   = $ceiled;
