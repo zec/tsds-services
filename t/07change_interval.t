@@ -91,7 +91,7 @@ my $collection = $database->get_collection( 'data' );
 my $query1 = {'identifier' => "d0ff413d4228455797d2a7087136ff1f202e1d737b4ad0f89d71d7c8702f46a3"};
 my $doc_count = $collection->count( $query1 );
 is( $doc_count, 2, "2 docs created" );
-my $cursor = $collection->find( $query1 );
+my $cursor = $collection->find( $query1 )->sort( ['start' => 1] );
 
 my $doc1 = $cursor->next();
 my $doc2 = $cursor->next();
@@ -132,7 +132,7 @@ sleep( 10 );
 my $query2 = {'identifier' => "d0ff413d4228455797d2a7087136ff1f202e1d737b4ad0f89d71d7c8702f46a3"};
 $doc_count = $collection->count( $query2 );
 is( $doc_count, 31, "31 docs exist" );
-$cursor = $collection->find( $query2 )->sort( {'start' => 1} );
+$cursor = $collection->find( $query2 )->sort( ['start' => 1] );
 
 my @docs = $cursor->all();
 
