@@ -139,7 +139,7 @@ foreach my $ident ( @identifiers ) {
     # (sort by 'start' ascending; ->all makes it return an array; get first/only array element)
     my $first_data;
     eval {
-        $first_data = ($data_collection->find([ identifier => $ident ]) 
+        $first_data = ($data_collection->find({ identifier => $ident }) 
                                        ->fields({ "start" => 1 })
                                        ->sort([ start => 1 ])
                                        ->limit(1)->all)[0]; 
@@ -161,7 +161,7 @@ foreach my $ident ( @identifiers ) {
     # (sort by 'start' ascending; ->all makes it return an array; get first/only array element)
     my $first_info; 
     eval {
-        $first_info  = ($info_collection->find([ identifier => $ident ])
+        $first_info  = ($info_collection->find({ identifier => $ident })
                                         ->sort([ start => 1 ])
                                         ->limit(1)->all)[0]; 
     };
@@ -199,7 +199,7 @@ foreach my $ident ( @identifiers ) {
         # (must delete and insert rather than just modify due to the shard keys) 
         eval {
             log_debug("  DELETING _id = $first_info->{'_id'}");
-            $info_collection->delete_one([ "_id" => $first_info->{"_id"} ]); 
+            $info_collection->delete_one({ "_id" => $first_info->{"_id"} }); 
         };
         if($@){
             # if there was a problem, don't attempt to insert an updated doc
