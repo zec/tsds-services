@@ -106,8 +106,8 @@ my $data_collection = $db->get_collection("data");
 my $identifiers_to_do;
 eval {
      $identifiers_to_do = $db->run_command([ "distinct" => "measurements",
-                                            "key" => "identifier",
-                                            "query" => $query ]);
+                                             "key" => "identifier",
+                                             "query" => $query ]);
     };
 if ($@) {
     log_error( "ERROR: There was a problem getting the identifiers to do: $@ " );
@@ -128,7 +128,7 @@ my $ninserts = 0;
 # progress bar
 my $cnt = 0;
 my $cli = GRNOC::CLI->new();
-$cli->start_progress( $nids);
+$cli->start_progress($nids);
 
 foreach my $ident ( @identifiers ) {
     $cnt++;
@@ -139,10 +139,10 @@ foreach my $ident ( @identifiers ) {
     # (sort by 'start' ascending; ->all makes it return an array; get first/only array element)
     my $first_data;
     eval {
-        $first_data = ($data_collection->find({ identifier => $ident }) 
-                                      ->fields({ "start" => 1 })
-                                      ->sort({ start => 1 })
-                                      ->limit(1)->all)[0]; 
+        $first_data = ($data_collection->find([ identifier => $ident ]) 
+                                       ->fields({ "start" => 1 })
+                                       ->sort([ start => 1 ])
+                                       ->limit(1)->all)[0]; 
     };
     if ($@) {
         log_error("Identifier: $ident");
@@ -161,8 +161,8 @@ foreach my $ident ( @identifiers ) {
     # (sort by 'start' ascending; ->all makes it return an array; get first/only array element)
     my $first_info; 
     eval {
-        $first_info  = ($info_collection->find({ identifier => $ident })
-                                        ->sort({ start => 1 })
+        $first_info  = ($info_collection->find([ identifier => $ident ])
+                                        ->sort([ start => 1 ])
                                         ->limit(1)->all)[0]; 
     };
     if ($@) {
@@ -199,7 +199,7 @@ foreach my $ident ( @identifiers ) {
         # (must delete and insert rather than just modify due to the shard keys) 
         eval {
             log_debug("  DELETING _id = $first_info->{'_id'}");
-            $info_collection->remove({ "_id" => $first_info->{"_id"} }); 
+            $info_collection->delete_one([ "_id" => $first_info->{"_id"} ]); 
         };
         if($@){
             # if there was a problem, don't attempt to insert an updated doc

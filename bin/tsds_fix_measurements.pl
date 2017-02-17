@@ -52,7 +52,7 @@ foreach my $db_name (@dbs){
 
     # Grab the unique set of identifiers, ie the unique series of
     # measurement metadata
-    my $unique_identifiers = $db->run_command({distinct => "measurements", key => "identifier"});
+    my $unique_identifiers = $db->run_command([distinct => "measurements", key => "identifier"]);
     next if (! ref $unique_identifiers || ! $unique_identifiers->{'values'});
     $unique_identifiers = $unique_identifiers->{'values'};
 
@@ -77,7 +77,7 @@ foreach my $db_name (@dbs){
 	    exit(1);
 	}
 
-	my @measurements = $measurements_col->find({"identifier" => $identifier})->all();
+	my @measurements = $measurements_col->find(["identifier" => $identifier])->all();
 
 	#print  "    $identifier => " . scalar(@measurements) . "\n";
 
@@ -114,7 +114,7 @@ foreach my $db_name (@dbs){
 	    # reinsert document now, booooo, only way to ensure the type fixing
 	    # above actually takes effect since perl can't easily test for string vs int
 	    if ($doit){
-		$measurements_col->remove({"_id" => $doc_id});
+		$measurements_col->delete_one(["_id" => $doc_id]);
 		$measurements_col->insert_one($measurement);
 	    }	    	    
 	}
@@ -136,7 +136,7 @@ foreach my $db_name (@dbs){
 		# active doc, so we can just axe this one
 		if ($doit){
 		    print "Already saw active doc for $identifier, removing!\n";
-		    $measurements_col->remove({"_id" => $doc_id});
+		    $measurements_col->delete_one(["_id" => $doc_id]);
 		}
 		else {
 		    print "Already saw active doc for $identifier\n";
@@ -154,7 +154,7 @@ foreach my $db_name (@dbs){
 
 		if ($doit){
 		    print "Bad doc $doc_id, missing data or start ($current_start) > end ($current_end), removing!\n";
-		    $measurements_col->remove({"_id" => $doc_id});
+		    $measurements_col->delete_one(["_id" => $doc_id]);
 		}
 		else {
 		    print "Bad doc $doc_id, missing data or start ($current_start) > end ($current_end)\n";
@@ -173,7 +173,7 @@ foreach my $db_name (@dbs){
 		if (defined $current_end && $current_end <= $last_end){
 		    if ($doit){
 			print "Doc $doc_id entirely  inside the last doc for $identifier, removing\n";
-			$measurements_col->remove({"_id" => $doc_id});
+			$measurements_col->delete_one(["_id" => $doc_id]);
 		    }
 		    else {
 			print "Doc $doc_id entirely inside the last doc for $identifier\n";
@@ -193,7 +193,7 @@ foreach my $db_name (@dbs){
 		else {
 		    if ($doit){
 			print "Start time on $doc_id for $identifier needs moving forward, adjusting\n";
-			$measurements_col->remove({"_id" => $doc_id});
+			$measurements_col->delete_one(["_id" => $doc_id]);
 			$measurement->{'start'} = $last_end;
 			$measurements_col->insert_one($measurement);
 		    }
@@ -210,7 +210,7 @@ foreach my $db_name (@dbs){
 
 		if ($doit){
 		    print "End time on $doc_id for $identifier needs moving forward, adjusting\n";
-		    $measurements_col->remove({"_id" => $doc_id});
+		    $measurements_col->delete_one(["_id" => $doc_id]);
 		    $measurement->{'end'} = $last_end;
 		    $measurements_col->insert_one($measurement);
 		}

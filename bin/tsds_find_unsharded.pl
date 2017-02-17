@@ -27,7 +27,7 @@ foreach my $db_name (@$databases){
     print "\n\nChecking db \"$db_name\"\n";
 
     my $db       = $mongo->get_database($db_name);
-    my $metadata = $db->get_collection('metadata')->find_one();
+    my $metadata = $db->get_collection('metadata')->find_one([]);
 
     # Skip non TSDS databases
     if (! $metadata && $db_name !~ /^__tsds/){
