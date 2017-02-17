@@ -6,6 +6,10 @@
 /MYMETA.json
 /MYMETA.yml
 
+# User-created config files used by the test suite
+/t/conf/config.xml
+/t/conf/constraints.xml
+
 # Common editor tempfiles
 *~
 ~*
