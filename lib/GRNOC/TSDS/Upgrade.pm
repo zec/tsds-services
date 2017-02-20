@@ -172,7 +172,7 @@ sub _get_old_version {
 
     my ( $self ) = @_;
 
-    my $old_version = $self->mongo_root->get_database( 'tsds_version' )->get_collection( 'tsds_version' )->find_one()->{'version'};
+    my $old_version = $self->mongo_root->get_database( 'tsds_version' )->get_collection( 'tsds_version' )->find_one( {} )->{'version'};
 
     return $old_version;
 }

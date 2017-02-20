@@ -1089,7 +1089,7 @@ sub _query_event_database {
         $self->error($self->mongo_ro()->error());
         return;
     }
-    my $metadata = $database->get_collection(METADATA)->find_one();
+    my $metadata = $database->get_collection(METADATA)->find_one({});
 
     my $collection = $database->get_collection(EVENT);
 
@@ -1277,7 +1277,7 @@ sub _query_database {
 
         # load the metadata about this collection so we can use it to figure out
         # things like needing to unwind later
-        $metadata = $database->get_collection(METADATA)->find_one();
+        $metadata = $database->get_collection(METADATA)->find_one({});
 
         # we need start/end times to do some calculations on the values
         $queried_field_names->{'start'}      = 1;

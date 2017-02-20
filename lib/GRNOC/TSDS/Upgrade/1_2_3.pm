@@ -22,7 +22,7 @@ sub upgrade {
     my $collection = $database->get_collection( 'reports' );
 
     # set all prior reports to be "global"
-    $collection->update( {}, {'$set' => {'constraint_key' => "/tsds/services"}}, {'multiple' => 1} );
+    $collection->update_many( {}, {'$set' => {'constraint_key' => "/tsds/services"}} );
 
     # Set up users
     my $install = GRNOC::TSDS::Install->new(config_file => '/etc/grnoc/tsds/services/config.xml');
@@ -54,7 +54,7 @@ sub upgrade {
     # then prevents it from being used later since a non-root user would be trying to create it.
     # The Install.pm script does this so we're mirroring it here - create a dummy table
     # inside the temp database so that there is always something.
-    $tsds_mongo->get_database("__tsds_temp_space", create => 1)->run_command({"create" => "dummy"});
+    $tsds_mongo->get_database("__tsds_temp_space", create => 1)->run_command(["create" => "dummy"]);
 
 
     ### END UPGRADE CODE ###

@@ -154,7 +154,7 @@ sub _has_access_to {
     my ( $self, $db_name ) = @_;
 
     eval {
-        my $res = $self->mongo()->get_database( $db_name )->get_collection( 'metadata' )->find_one();
+        my $res = $self->mongo()->get_database( $db_name )->get_collection( 'metadata' )->find_one( {} );
     };
     # if there was an error
     if ($@){

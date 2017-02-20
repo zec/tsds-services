@@ -101,7 +101,7 @@ sub get_measurement_types {
             next if(!$meas_collection);
         }
 
-        my $fields         = $meta_collection->find_one();
+        my $fields         = $meta_collection->find_one({});
         my $label          = $fields->{'label'};
         my $data_doc_limit = $fields->{'data_doc_limit'};
         my $event_limit    = $fields->{'event_limit'};
@@ -118,7 +118,7 @@ sub get_measurement_types {
         };
         # add count if flag was passed in
         if($args{'show_measurement_count'}){
-            my $mt_count = $meas_collection->count();
+            my $mt_count = $meas_collection->count({});
             $measurement_type->{'measurement_count'} = $mt_count;
         }
         # add an array of the required fields if the flag was passed in
@@ -178,7 +178,7 @@ sub get_meta_fields {
         $self->error( 'Invalid Measurement Type.' );
         return;
     }
-    my $fields = $meta_collection->find_one();
+    my $fields = $meta_collection->find_one({});
     if (! $fields ) {
         $self->error( 'Invalid Measurement Type.' );
         return;
@@ -260,7 +260,7 @@ sub get_measurement_type_schemas {
         );
         
         # grab the label for the measurement_type 
-        my $metadata = $self->mongo_ro()->get_collection($measurement_type, 'metadata')->find_one();
+        my $metadata = $self->mongo_ro()->get_collection($measurement_type, 'metadata')->find_one({});
         if(!$metadata){
             $self->error("Invalid measurement_type, $measurement_type, skipping...");
             next;
@@ -378,7 +378,7 @@ sub get_measurement_type_values {
     }
 
     # make sure the meta collection has fields and grab the values 
-    my $fields = $meta_collection->find_one();
+    my $fields = $meta_collection->find_one({});
     if (! $fields ) {
         $self->error( "Invalid measurement_type: $measurement_type" );
         return;
@@ -676,7 +676,7 @@ sub get_distinct_meta_field_values {
                                                      {'$match' => $query},
                                                      {'$group' => { _id => '$'.$meta_field }},
                                                      {'$sort' => { _id => 1 }},
-                                                     {'$limit' => $limit+0}]);
+                                                     {'$limit' => $limit+0}])->all;
         };
         if ($@){
             $self->error("Error querying aggregation from database: $@");
@@ -929,7 +929,7 @@ sub add_meta_field {
     }
 
     # ensure indexes on the things
-    my $meta_fields = $col->find_one()->{'meta_fields'};
+    my $meta_fields = $col->find_one({})->{'meta_fields'};
     $self->mongo_rw()->process_meta_index(
         database => $db,
         prefix => "",
@@ -1085,7 +1085,7 @@ sub update_meta_fields {
     }
    
     # ensure indexes on the things 
-    my $meta_fields = $col->find_one()->{'meta_fields'};
+    my $meta_fields = $col->find_one({})->{'meta_fields'};
     $self->mongo_rw()->process_meta_index(
         database => $db,
         prefix => "",
@@ -1230,7 +1230,7 @@ sub _do_update_measurement_metadata {
     # Okay we're locked and loaded now, proceed as normal
     my $cursor;
     eval {
-	$cursor = $measurements->find($query)->sort({start => 1});
+	$cursor = $measurements->find($query)->sort([start => 1]);
     };
     if ($@){
 	$self->error("Error querying Mongo measurements: $@");
@@ -1660,7 +1660,7 @@ sub _update_measurement_metadata_sanity_check {
 
         my $metadata = $metadata_cache{$type};
         if (! $metadata){
-            $metadata = $self->mongo_ro()->get_collection($type, 'metadata')->find_one();
+            $metadata = $self->mongo_ro()->get_collection($type, 'metadata')->find_one({});
             if (! defined $metadata){
                 $self->error("Error getting metadata for type \"$type\": " . $self->mongo_ro()->error());
                 return;
@@ -1769,7 +1769,7 @@ sub delete_measurement_types {
     }
 
     my $data = $self->mongo_ro()->get_collection( $measurement_type, 'data' );
-    if($data->find_one()){
+    if($data->find_one({})){
         $self->error( "Can not delete measurement type, $measurement_type, as data collection is not empty");
         return;
     }

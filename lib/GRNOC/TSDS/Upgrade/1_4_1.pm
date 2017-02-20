@@ -36,7 +36,7 @@ sub upgrade {
         if ( grep( /^measurements$/, @all_collections) ) {
             print "Adding last_updated to measurements in $db_name\n";
             my $collection = $database->get_collection('measurements');
-            $collection->ensure_index({last_updated => 1});
+            $collection->indexes->create_one([last_updated => 1]);
             my $cursor = $collection->find({});
             while (my $doc = $cursor->next()) {
                 my $query = Tie::IxHash->new( 'identifier' => $doc->{'identifier'},

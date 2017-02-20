@@ -41,7 +41,7 @@ sub upgrade {
 
     my @db_names = $mongo->database_names;
     foreach my $db_name (@db_names){
-	my $metadata = $mongo->get_database($db_name)->get_collection('metadata')->find_one();
+	my $metadata = $mongo->get_database($db_name)->get_collection('metadata')->find_one({});
 
 	next if (! $metadata);
 

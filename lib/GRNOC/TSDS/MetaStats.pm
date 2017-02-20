@@ -395,7 +395,7 @@ sub _db_status()
       	$metainfo{db} = $database;
 
 	my $db =  $self->mongo_rw->get_database($database);
-	my $result = $db->run_command({dbStats => 1 });
+	my $result = $db->run_command([ dbStats => 1 ]);
 	$result = $result->{'raw'};
 
 	while ( my ( $key, $value ) = each ( %$result ) )
@@ -427,7 +427,7 @@ sub _shard_status{
    
     my $database = "admin";
     my $db =  $self->mongo_rw->get_database($database);
-    my $result = $db->run_command({listShards => 1 });
+    my $result = $db->run_command([ listShards => 1 ]);
     my $shards = $result->{'shards'};
     
     my %out_message;
@@ -464,7 +464,7 @@ sub _shard_status{
 
 	$metainfo{host} = $host;
 	$metainfo{shard} = $shard->{'_id'};
-	my $serverstats =  $admin_db->run_command({serverStatus => 1});
+	my $serverstats =  $admin_db->run_command([serverStatus => 1]);
 	my $asserts = $serverstats->{'asserts'};
 	my $opcounters =  $serverstats->{'opcounters'};
 	my $connections =  $serverstats->{'connections'};

@@ -97,7 +97,7 @@ sub get_expirations {
         return;
     }
 
-    my $expirations = $expiration_collection->find();
+    my $expirations = $expiration_collection->find({});
     if (! $expirations ) {
         $self->error( 'Invalid Measurement Type: no expirations found.' );
         return;
@@ -477,7 +477,7 @@ sub delete_aggregations {
     ) || return;
 
     # remove the aggregate rule from the collection
-    my $id = $agg_col->remove({name => $name});
+    my $id = $agg_col->delete_one({name => $name});
     if(!$id) {
         $self->error( "Error removing aggregate rule for $name.");
         return;
@@ -489,7 +489,7 @@ sub delete_aggregations {
         $self->error($self->mongo_rw()->error());
         return;
     }
-    $id = $exp_col->remove({ name => $name });
+    $id = $exp_col->delete_one({ name => $name });
     if(!$id) {
         $self->error( "Error removing values from expiration with name $name.");
         return;
@@ -544,7 +544,7 @@ sub _delete_aggregation_data {
     # if there's other aggregations besides the one we are deleting
     # delete everything in data_$interval that doesn't match their metadata scope
     if(@$ids){
-        my $res = $agg_data_col->remove({ identifier => { '$in' => $ids } });
+        my $res = $agg_data_col->delete_many({ identifier => { '$in' => $ids } });
         if(!$res) {
             $self->error( "Error removing values from aggregate with name $name.");
             return;
@@ -587,7 +587,7 @@ sub delete_expirations {
         $self->error("Aggregation named, $name, doesn't exist");
         return;
     }
-    my $id = $exp_col->remove({name => $name});
+    my $id = $exp_col->delete_one({name => $name});
     if(!$id) {
         $self->error( "Error removing values from expiration with name $name.");
         return;
@@ -694,7 +694,7 @@ sub _recalculate_eval_positions {
 
      # these are the other docregations that didn't get updated / aren't getting their position replaced
     my $other_cur = $col->find( { 'eval_position' => {'$ne' => $new_eval_position}, 
-       'name' => {'$ne' => $name} } );
+                                  'name' => {'$ne' => $name} } );
     my $other_docs = [];
 
     # detect error
@@ -778,7 +778,7 @@ sub _eval_position_in_use {
     my $query = { 'eval_position' => $eval_position, 'name' => {'$ne' => $name} };
 
     my $exp_res = $col->find($query);
-    my $in_use  = $col->count();
+    my $in_use  = $col->count({});
 
     return $in_use;
 
@@ -814,7 +814,7 @@ sub _validate_values {
 	return;
     }
 
-    $metadata = $metadata->find_one();
+    $metadata = $metadata->find_one({});
 
     # Make sure each value exists and that the values we're passing
     # in for aggregation configuration make sense

@@ -1189,8 +1189,8 @@ sub _get_reports {
         return;
     }
 =cut
-    my @reports = $report_collection->find($find)->sort( { $order_by => $flag } )->skip($offset)->limit($limit)->all;
-    my $count = $report_collection->find($find)->sort( { $order_by => $flag } )->skip($offset)->limit($limit)->count();
+    my @reports = $report_collection->find($find)->sort( [ $order_by => $flag ] )->skip($offset)->limit($limit)->all;
+    my $count = $report_collection->find($find)->sort( [ $order_by => $flag ] )->skip($offset)->limit($limit)->count();
 
     @reports = map {{ name           => $_->{'name'}, 
                       type           => $_->{'type'},

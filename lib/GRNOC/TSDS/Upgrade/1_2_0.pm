@@ -12,7 +12,7 @@ sub upgrade {
 
     ### UPGRADE CODE GOES HERE ###
 
-    my $mongo = $upgrade->mongo;
+    my $mongo = $upgrade->mongo_root;
 
     my @dbs = $mongo->database_names();
 
@@ -39,7 +39,7 @@ sub upgrade {
 
             my $agg_id = $agg->{'_id'};
 
-            $agg_col->update( {'_id' => $agg_id}, {'$unset' => {'hist_res' => ''}} );
+            $agg_col->update_one( {'_id' => $agg_id}, {'$unset' => {'hist_res' => ''}} );
 
             my $metadata_values = $metadata_col->find( {} )->fields( {'values' => 1} )->next()->{'values'};
 
@@ -72,8 +72,8 @@ sub upgrade {
                     $min_width = 1;
                 }
 
-                $agg_col->update( {'_id' => $agg_id}, {'$set' => {"values.$metadata_value" => {'hist_res' => $hist_res,
-                                                                                               'hist_min_width' => $min_width}}} );
+                $agg_col->update_one( {'_id' => $agg_id}, {'$set' => {"values.$metadata_value" => {'hist_res' => $hist_res,
+                                                                                                   'hist_min_width' => $min_width}}} );
             }
         }
     }

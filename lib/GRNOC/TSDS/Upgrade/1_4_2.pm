@@ -32,7 +32,7 @@ sub upgrade {
 
     # ISSUE=12319 create and shard the new temporary workspace
     print "Creating temp workspace...\n";
-    $tsds_mongo->get_database("__tsds_temp_space", create => 1 )->run_command({"create" => "__workspace"});
+    $tsds_mongo->get_database("__tsds_temp_space", create => 1 )->run_command(["create" => "__workspace"]);
 
     print "Sharding temp workspace database...\n";
     if (! $tsds_mongo->enable_sharding("__tsds_temp_space")){
@@ -62,11 +62,11 @@ sub upgrade {
         if ( grep( /^measurements$/, @all_collections) ) {
             print "Adding identifier index to measurements in $db_name\n";
             my $collection = $database->get_collection('measurements');
-            $collection->ensure_index({identifier => 1});
+            $collection->indexes->create_one([identifier => 1]);
 
             # ISSUE=12304 add missing start/end indexes in a few places
-            $collection->ensure_index({start => 1});
-            $collection->ensure_index({end => 1});
+            $collection->indexes->create_one([start => 1]);
+            $collection->indexes->create_one([end => 1]);
         }
     }
 

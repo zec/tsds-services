@@ -477,10 +477,10 @@ sub _create_databases {
     my ( $self ) = @_;
 
     # create the empty reports database
-    $self->mongo_root()->get_database("tsds_reports", create => 1 )->run_command({"create" => "reports"});
+    $self->mongo_root()->get_database("tsds_reports", create => 1 )->run_command(["create" => "reports"]);
 
     # create the temp workspace database
-    $self->mongo_root()->get_database("__tsds_temp_space", create => 1 )->run_command({"create" => "__workspace"});
+    $self->mongo_root()->get_database("__tsds_temp_space", create => 1 )->run_command(["create" => "__workspace"]);
     if (! $self->mongo_root()->enable_sharding("__tsds_temp_space")){
         $self->error("Error sharding temp space: " . $self->mongo_root()->error());
         return;
