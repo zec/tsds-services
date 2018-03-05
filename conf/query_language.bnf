@@ -39,6 +39,7 @@ field  ::= average |
            extrapolate |
 	   aggregate |
            all |
+           moving_avg |
            word
 
 average ::= 'average' '(' field ')' action => remove_symbols
@@ -80,6 +81,10 @@ extrapolate ::= 'extrapolate' '(' field_word ',' number ')' action => remove_sym
                 'extrapolate' '(' field ',' number ')' action => remove_symbols
                 |
                 'extrapolate' '(' field ',' 'series' ')' action => remove_symbols
+
+moving_avg ::= 'moving_average' '(' field_word ',' number ')' action => remove_symbols
+               |
+               'moving_average' '(' field ',' number ')' action => remove_symbols
 
 all ::= 'all' '(' field_word ')' action => remove_symbols
 

@@ -14,7 +14,7 @@ use Clone qw(clone);
 use Math::Round qw( nlowmult );
 use Data::Dumper;
 use Sys::Hostname;
-use List::Util qw(min max);
+use List::Util qw(min max all sum);
 use POSIX;
 
 use GRNOC::Log;
@@ -2689,6 +2689,9 @@ sub _apply_aggregation_functions {
                     when (/^all$/) {
                         $aggregate_result = $self->_apply_all($get_field, $data);
                     }
+                    when (/^moving_average$/) {
+                        $aggregate_result = $self->_apply_moving_average($get_field, $data);
+                    }
                     when (/^aggregate$/){
                         $aggregate_result = $self->_apply_aggregate($get_field, $data);
                     }
@@ -3334,6 +3337,59 @@ sub _apply_all {
 
     return {
 	$rename => \@keys
+    };
+}
+
+sub _apply_moving_average {
+    my $self   = shift;
+    my $tokens = shift;
+    my $data   = shift;
+
+    my $name           = $tokens->[1];
+    my $window_seconds = $tokens->[2];
+
+    my $rename = $self->_find_rename($tokens) || "moving_average($name,$window_seconds)";
+    my ($math_symbol, $math_value) = $self->_find_math($tokens);
+
+    my @set = $self->_find_value($name, $data);
+
+    my $result;
+
+    # the moving average of zero or one points is just the input array:
+    if (scalar(@set) < 2){
+        $result = \@set;
+    }
+    else {
+        my @new_set;
+
+        # we assume that all the points in @set
+        # are sorted and evenly spaced in time,
+        # so we can get away with this:
+        my $interval = $set[1]->[0] - $set[0]->[0];
+
+        my @vals = map { $_->[1] } @set;
+        my $window = int(abs($window_seconds) / $interval);
+
+        my $first_time = $set[0]->[0];
+        my $center_of_window = ($window * $interval) / 2;
+        my $offset = $first_time + $center_of_window;
+
+        for (my $i = 0; $i < scalar(@set) - $window; $i += 1){
+            my $total     = sum( map { (defined $_) ? $_ : 0 } @vals[$i..($i+$window)] );
+            my $n_defined = sum( map { (defined $_) ?  1 : 0 } @vals[$i..($i+$window)] );
+            my $avg = ($n_defined > 0) ? $total / $n_defined : undef;
+            push @new_set, [int($offset + ($i * $interval)), $avg];
+        }
+
+        $result = \@new_set;
+    }
+
+    if ($math_symbol){
+        $result = $self->_apply_math($result, $math_symbol, $math_value);
+    }
+
+    return {
+        $rename => $result
     };
 }
 
