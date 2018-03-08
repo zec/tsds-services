@@ -14,7 +14,8 @@ use Clone qw(clone);
 use Math::Round qw( nlowmult );
 use Data::Dumper;
 use Sys::Hostname;
-use List::Util qw(min max all sum);
+use List::Util qw(min max sum);
+use List::MoreUtils qw(all);
 use POSIX;
 
 use GRNOC::Log;
@@ -3846,6 +3847,7 @@ sub _is_aggregation_function {
 		 $word eq 'histogram' ||
 		 $word eq 'extrapolate' ||
                  $word eq 'all' ||
+                 $word eq 'moving_average' ||
 		 $word eq 'aggregate');
 
     return 0;
