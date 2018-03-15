@@ -3361,21 +3361,30 @@ sub _apply_moving_average {
         $result = \@set;
     }
     else {
-        my @new_set;
+        # Sort @set by time:
+        @set = sort { $a->[0] <=> $b->[0] } @set;
 
-        # we assume that all the points in @set
-        # are sorted and evenly spaced in time,
-        # so we can get away with this:
-        my $interval = $set[1]->[0] - $set[0]->[0];
-
-        my @vals = map { $_->[1] } @set;
+        # It's possible that the points in @set aren't evenly distributed in
+        # time... so we take some precautions calculating the interval:
+        my $interval = min( map { $set[$_]->[0] - $set[$_-1]->[0] } (1..(scalar(@set)-1)) );
         my $window = int(abs($window_seconds) / $interval);
 
+        # Put the data points on a uniform grid of size $interval:
         my $first_time = $set[0]->[0];
+        my $last_time  = $set[scalar(@set) - 1]->[0];
+        my $npoints    = int(($last_time - $first_time + 1) / $interval);
+
+        my @vals = (undef) x $npoints;
+        foreach my $datum (@set){
+            $vals[int(($datum->[0] - $first_time) / $interval)] = $datum->[1];
+        }
+
+        # Actually compute the windowed average:
         my $center_of_window = ($window * $interval) / 2;
         my $offset = $first_time + $center_of_window;
+        my @new_set;
 
-        for (my $i = 0; $i < scalar(@set) - $window; $i += 1){
+        for (my $i = 0; $i < $npoints - $window; $i += 1){
             my $total     = sum( map { (defined $_) ? $_ : 0 } @vals[$i..($i+$window)] );
             my $n_defined = sum( map { (defined $_) ?  1 : 0 } @vals[$i..($i+$window)] );
             my $avg = ($n_defined > 0) ? $total / $n_defined : undef;
