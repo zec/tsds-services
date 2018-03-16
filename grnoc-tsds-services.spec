@@ -1,7 +1,7 @@
 Summary: GRNOC TSDS Services
 Name: grnoc-tsds-services
 Version: 1.6.0
-Release: 2%{?dist}
+Release: 1%{?dist}
 License: GRNOC
 Group: Measurement
 URL: http://globalnoc.iu.edu
@@ -259,6 +259,7 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/GRNOC/TSDS/MongoDB.pm
 %{perl_vendorlib}/GRNOC/TSDS/Parser.pm
 %{perl_vendorlib}/GRNOC/TSDS/Parser/Actions.pm
+%{perl_vendorlib}/GRNOC/TSDS/Parser/MovingAverage.pm
 %{perl_vendorlib}/GRNOC/TSDS/RedisLock.pm
 %{perl_vendorlib}/GRNOC/TSDS/Upgrade.pm
 %{perl_vendorlib}/GRNOC/TSDS/Upgrade/*.pm

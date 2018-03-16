@@ -84,6 +84,7 @@ lib/GRNOC/TSDS/MeasurementDecommer.pm
 lib/GRNOC/TSDS/MongoDB.pm
 lib/GRNOC/TSDS/Parser.pm
 lib/GRNOC/TSDS/Parser/Actions.pm
+lib/GRNOC/TSDS/Parser/MovingAverage.pm
 lib/GRNOC/TSDS/RedisLock.pm
 lib/GRNOC/TSDS/SearchIndexer.pm
 lib/GRNOC/TSDS/Upgrade.pm
