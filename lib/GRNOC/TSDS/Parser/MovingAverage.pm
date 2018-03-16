@@ -9,6 +9,7 @@ use List::MoreUtils qw(all);
 
 use GRNOC::Log;
 
+# Top-level moving-average function
 sub moving_average {
     my $set = shift;
     my $window_seconds = shift;
@@ -46,7 +47,11 @@ sub moving_average {
         my @new_set;
 
         for (my $i = 0; $i < $npoints - $window; $i += 1){
-            my @points_in_window = grep { (defined $_) && ($_->[0] <= $first_time + ($i * $interval) + $window_seconds) } @vals[$i..($i+$window)];
+            my @points_in_window = grep { defined($_) } @vals[$i..($i+$window-1)];
+            # Whether we should include $vals[$i+$window] depends on just what
+            # time that datapoint has...
+            my $last = $vals[$i+$window];
+            push @points_in_window, $last if defined($last) && ($last->[0] <= $first_time + ($i * $interval) + $window_seconds);
 
             my $total = sum( map { $_->[1] } @points_in_window );
             my $n_defined = scalar(@points_in_window);
