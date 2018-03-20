@@ -12,10 +12,9 @@ use GRNOC::Log;
 # Top-level moving-average function
 sub moving_average {
     my $set = shift;
-    my $window_seconds = shift;
+    my $window = shift;
 
     my @set = @$set;
-    $window_seconds = abs($window_seconds);
 
     my $result;
 
@@ -41,8 +40,17 @@ sub moving_average {
             $grid[int(($datum->[0] - $first_time) / $interval)] = $datum;
         }
 
-        # Actually compute the windowed average:
-        $result = _mavg(\@grid, $interval, $window_seconds);
+        # Now that we've done that, compute the windowed average:
+        if ($window eq 'ASAP') {
+            # Use the ASAP window-size auto-tuning algorithm to find the "best"
+            # window size, then use that window:
+            $result = _asap(\@grid, $interval);
+        }
+        else {
+            # If we get here, window is actually a number: the
+            # manually-specified window size, in seconds
+            $result = _mavg(\@grid, $interval, $window);
+        }
     }
 
     return $result;
@@ -59,8 +67,8 @@ sub _mavg {
     my $interval       = shift;
     my $window_seconds = shift;
 
+    $window_seconds = abs($window_seconds);
     my @data = @$data;
-
     my $first_time = $data[0]->[0];
 
     my $window = int($window_seconds / $interval);
@@ -88,6 +96,10 @@ sub _mavg {
     }
 
     return \@smoothed_data;
+}
+
+sub _asap {
+    return [];
 }
 
 1;
