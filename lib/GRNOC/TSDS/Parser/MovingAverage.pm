@@ -48,7 +48,7 @@ sub moving_average {
         if ($window eq 'ASAP') {
             # Use the ASAP window-size auto-tuning algorithm to find the "best"
             # window size, then use that window:
-            $result = _asap(\@set, \@grid, $interval);
+            $result = _asap(\@set);
         }
         else {
             # If we get here, window is actually a number: the
@@ -104,8 +104,6 @@ sub _mavg {
 
 sub _asap {
     my $data = shift; # array of (timestamp, value) pairs, sorted by timestamp
-    my $grid     = shift; # $data, reformatted for use by _mavg
-    my $interval = shift; # Grid interval used by $grid
 
     my $step = $data->[1][0] - $data->[0][0];
 
@@ -153,7 +151,12 @@ sub _asap {
 
     my $window_size = _binary_search(\@values, $base_stats, $lo, $hi, $opt);
 
-    return _mavg($grid, $interval, $window_size * $interval);
+    my @Y = @{_sma(\@values, $window_size)};
+
+    my $window_offset = $data->[0][0] + (($window_size - 1) * $step / 2);
+    @Y = map { [ $window_offset + ($_ * $step), $Y[$_] ] } (0..$#Y);
+
+    return \@Y;
 }
 
 # Calculate the statistics of a timeseries
