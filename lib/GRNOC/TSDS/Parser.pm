@@ -3356,6 +3356,15 @@ sub _apply_moving_average {
 
     my $result = GRNOC::TSDS::Parser::MovingAverage::moving_average(\@set, $window_seconds);
 
+    # A non-reference result from moving_average means an error happened:
+    if (ref($result) eq '') {
+        my $msg = "Unable to calculate $rename";
+        $msg .= ": $result" if defined($result);
+
+        $self->error($msg);
+        return;
+    }
+
     if ($math_symbol){
         $result = $self->_apply_math($result, $math_symbol, $math_value);
     }

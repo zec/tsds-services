@@ -11,7 +11,9 @@ use Math::FFT qw();
 
 use GRNOC::Log;
 
-# Top-level moving-average function
+# Top-level moving-average function; returns a reference to an array of
+# output (timestamp, value) pairs on success, or undef or an error-message
+# string if there was a problem.
 sub moving_average {
     my $set = shift;
     my $window = shift;
@@ -115,7 +117,6 @@ sub _asap {
         next if (($data->[$i][0] - $data->[$i-1][0]) == $step)
                 && defined($data->[$i][1]) && defined($data->[$i-1][1]);
 
-        # TODO: implement actual error
         my $date = time2str('%Y-%m-%dT%H:%M:%SZ', $data->[$i-1][0], 'UTC')
         return "ASAP smoothing currently only supports data without gaps (first gap near $date)";
     }
@@ -131,7 +132,28 @@ sub _asap {
 
     my $base_stats = _calc_stats(\@values);
 
-    return [];
+    # Initial state for search:
+    my $initial_opt = {
+        lower_bound => 1,
+        roughness   => $base_stats->{'roughness'},
+        window      => 1,
+        lfi         => -1, # "largest feasible index"
+    };
+
+    my $opt = _search_periodic(\@values, $base_stats, $candidates, $corr, $inital_opt);
+
+    # Search bounds for binary search
+    my $hi = max(int(scalar(@values) / 10), 1);
+    my $lo = $opt->{'lower_bound'};
+
+    if ($opt->{'lfi'} >= 0) {
+        $hi = $candidates->[$opt->{'lfi'}+1] if $opt->{'lfi'} <= scalar(@$candidates) - 2;
+        $lo = max($lo, $candidates->[$opt->{'lfi'}] + 1);
+    }
+
+    my $window_size = _binary_search(\@values, $base_stats, $lo, $hi, $opt);
+
+    return _mavg($grid, $interval, $window_size * $interval);
 }
 
 # Calculate the statistics of a timeseries
@@ -153,15 +175,13 @@ sub _calc_stats {
     my ($dm, $dvar) = _mean_var(\@diffs);
     my $roughness = sqrt($dvar);
 
-    my %results = (
+    return {
         mean      => $mean,
         variance  => $variance,
         stdev     => $stdev,
         kurtosis  => $kurtosis,
         roughness => $roughness,
-    );
-
-    return \%results;
+    };
 }
 
 # Used by _calc_stats
@@ -203,7 +223,11 @@ sub _calc_acf {
     # For our purposes, we only care about the first $len entries, so we truncate:
     $#corr = $#values;
 
-    return \@corr;
+    # ASAP uses a variance-normalized autocorrelation:
+    my $variance = $corr[0];
+    my @normed = map { $_ / $variance } @corr;
+
+    return \@normed;
 }
 
 # Find the peaks (local maxima) in an array of data,
@@ -256,6 +280,99 @@ sub _find_peaks {
     push @peaks, ($len-1) if $arr->[$len-1] > $arr->[$len-2];
 
     return \@peaks;
+}
+
+# The searchPeriodic function of the ASAP paper, using the following arguments:
+# * the timeseries itself
+# * the results of _calc_stats(timeseries)
+# * the candidate window sizes
+# * the autocorrelation of the timeseries
+# * the initial search state
+#
+# Returns the final search state.
+sub _search_periodic {
+    my ($X, $X_stats, $candidates, $acf, $initial_opt) = @_;
+
+    my %opt = %$initial_opt;
+    my @acf = @$acf;
+    my $max_acf = max(@acf[@$candidates]);
+
+    for (my $i = scalar(@$candidates) - 1; $i >= 0; $i -= 1) {
+        my $w = $candididates->[$i];
+
+        last if $w < $opt{'lower_bound'};
+
+        next if ((1-$acf->[$w])             / ($w*$w))
+              > ((1-$acf->[$opt{'window'}]) / ($opt{'window'}*$opt{'window'}));
+
+        my $Y = _sma($X, $w);
+
+        my %Y = %{_calc_stats(@$Y)};
+
+        if ($Y{'kurtosis'} >= $X_stats->{'kurtosis'}) {
+            if ($Y{'roughness'} < $opt{'roughness'}) {
+                $opt{'window'} = $w;
+                $opt{'roughness'} = $Y{'roughness'};
+            }
+            $opt{'lower_bound'} = int( max(
+                $opt{'lower_bound'},
+                $w * sqrt( (1-$max_acf) / (1-$acf->[$w]) )
+            ) );
+            $opt{'lfi'} = max($opt{'lfi'}, $i);
+        }
+    }
+
+    return \%opt;
+}
+
+# Binary search on window sizes
+sub _binary_search {
+    my ($X, $X_stats, $low, $high, $initial_opt) = @_;
+
+    my %opt = %$initial_opt;
+
+    while ($low <= $high) {
+        my $w = int(($low + $high) / 2); # test window size
+
+        my $Y = _sma($X, $w);
+        my %Y = %{_calc_stats(@$Y)};
+
+        # For uncorrelated data, kurtosis and roughness tend to decrease
+        # with increasing window size. We want to find the smoothest window
+        # that still has at least as much kurtosis as the original data, so:
+
+        if ($Y{'kurtosis'} >= $X_stats->{'kurtosis'}) {
+            if ($Y{'roughness'} < $opt{'roughness'}) {
+                $opt{'window'} = $w;
+                $opt{'roughness'} = $Y{'roughness'};
+            }
+
+            # search upper half of range
+            $low = $w + 1;
+        } else {
+            # search lower half of range
+            $high = $w - 1;
+        }
+    }
+
+    # Return the best window we found
+    return $opt{'window'};
+}
+
+
+# Windowed moving average, with regularly-sampled, all-defined data
+sub _sma {
+    my $X = shift; # timeseries
+    my $window = shift; # window size; must be a positive integer
+
+    my @X = @$X;
+    my @Y;
+
+    foreach my $i (0..(scalar(@X)-$window)) {
+        push @Y, (sum @X[$i..($i+$window-1)]) / $window;
+    }
+
+    return \@Y;
 }
 
 1;
