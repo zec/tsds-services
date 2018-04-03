@@ -115,7 +115,7 @@ sub _asap {
         next if (($data->[$i][0] - $data->[$i-1][0]) == $step)
                 && defined($data->[$i][1]) && defined($data->[$i-1][1]);
 
-        my $date = time2str('%Y-%m-%dT%H:%M:%SZ', $data->[$i-1][0], 'UTC')
+        my $date = time2str('%Y-%m-%dT%H:%M:%SZ', $data->[$i-1][0], 'UTC');
         return "ASAP smoothing currently only supports data without gaps (first gap near $date)";
     }
 
@@ -138,7 +138,7 @@ sub _asap {
         lfi         => -1, # "largest feasible index"
     };
 
-    my $opt = _search_periodic(\@values, $base_stats, $candidates, $corr, $inital_opt);
+    my $opt = _search_periodic(\@values, $base_stats, $candidates, $corr, $initial_opt);
 
     # Search bounds for binary search
     my $hi = max(int(scalar(@values) / 10), 1);
@@ -173,7 +173,7 @@ sub _calc_stats {
 
     # Roughness, as defined in the ASAP paper. First, get the series of
     # first differences:
-    my @diffs = map { $data->[$i+1] - $data->[$i] } (0..(scalar(@$data)-2));
+    my @diffs = map { $data->[$_+1] - $data->[$_] } (0..(scalar(@$data)-2));
     # Then, get its standard deviation:
     my ($dm, $dvar) = _mean_var(\@diffs);
     my $roughness = sqrt($dvar);
@@ -198,7 +198,7 @@ sub _mean_var {
         $var = sum(map { my $x = $_ - $mean; $x * $x } @$data) / ($N - 1);
     }
 
-    return ($mean, $variance);
+    return ($mean, $var);
 }
 
 # Calculate the autocorrelation of the data, with some help from FFTs:
@@ -301,7 +301,7 @@ sub _search_periodic {
     my $max_acf = max(@acf[@$candidates]);
 
     for (my $i = scalar(@$candidates) - 1; $i >= 0; $i -= 1) {
-        my $w = $candididates->[$i];
+        my $w = $candidates->[$i];
 
         last if $w < $opt{'lower_bound'};
 
