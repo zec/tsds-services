@@ -161,15 +161,18 @@ sub _asap {
 
 # Calculate the statistics of a timeseries
 sub _calc_stats {
-    my $data = shift; # An array of (defined) values; assumed to have at least two elements
+    my $data = shift; # An array of (defined) values; assumed to have at least one element
     my $N = scalar(@$data); # Number of elements in @$data
 
     # Standard statistical measures
     my ($mean, $variance) = _mean_var($data);
     my $stdev = sqrt($variance);
 
-    my $expected_fourths = sum(map { ($_ - $mean) ** 4 } @$data) / ($N - 1);
-    my $kurtosis = $expected_fourths / ($variance * $variance);
+    my $kurtosis = 0;
+    if ($variance > 0) {
+        my $expected_fourths = sum(map { ($_ - $mean) ** 4 } @$data) / $N;
+        $kurtosis = $expected_fourths / ($variance * $variance);
+    }
 
     # Roughness, as defined in the ASAP paper. First, get the series of
     # first differences:
@@ -193,10 +196,7 @@ sub _mean_var {
     my $N = scalar(@$data);
 
     my $mean = (sum @$data) / $N;
-    my $var = 0; # variance
-    if ($N > 1) {
-        $var = sum(map { my $x = $_ - $mean; $x * $x } @$data) / ($N - 1);
-    }
+    my $var = sum(map { my $x = $_ - $mean; $x * $x } @$data) / $N;
 
     return ($mean, $var);
 }
@@ -208,6 +208,10 @@ sub _calc_acf {
 
     my @values = @$data;
 
+    # Normalize data to have zero mean:
+    my $mean = (sum @values) / scalar(@values);
+    @values = map { $_ - $mean } @values;
+
     # Zero-pad out values, as (1) FFT uses power-of-two lengths only and
     # (2) the FFT-based algorithm actually calculates a *circular*
     # autocorrelation, so we want a large blank area after the actual data
@@ -217,14 +221,14 @@ sub _calc_acf {
     while ((2**$len_b2) <= $len){
         $len_b2 += 1;
     }
-    push @values, (0 x ((2**$len_b2) - $len));
+    push @values, (0) x ((2**$len_b2) - $len);
 
     # Calculate the (circular) autocorrelation:
     my $fft = Math::FFT->new(\@values);
     my @corr = @{$fft->correl($fft)};
 
     # For our purposes, we only care about the first $len entries, so we truncate:
-    $#corr = $#values;
+    $#corr = $len - 1;
 
     # ASAP uses a variance-normalized autocorrelation:
     my $variance = $corr[0];
@@ -310,7 +314,7 @@ sub _search_periodic {
 
         my $Y = _sma($X, $w);
 
-        my %Y = %{_calc_stats(@$Y)};
+        my %Y = %{_calc_stats($Y)};
 
         if ($Y{'kurtosis'} >= $X_stats->{'kurtosis'}) {
             if ($Y{'roughness'} < $opt{'roughness'}) {
@@ -319,8 +323,8 @@ sub _search_periodic {
             }
             $opt{'lower_bound'} = int( max(
                 $opt{'lower_bound'},
-                $w * sqrt( (1-$max_acf) / (1-$acf->[$w]) )
-            ) );
+                int( $w * sqrt( (1-$max_acf) / (1-$acf[$w]) ) )
+            );
             $opt{'lfi'} = max($opt{'lfi'}, $i);
         }
     }
@@ -338,7 +342,7 @@ sub _binary_search {
         my $w = int(($low + $high) / 2); # test window size
 
         my $Y = _sma($X, $w);
-        my %Y = %{_calc_stats(@$Y)};
+        my %Y = %{_calc_stats($Y)};
 
         # For uncorrelated data, kurtosis and roughness tend to decrease
         # with increasing window size. We want to find the smoothest window
