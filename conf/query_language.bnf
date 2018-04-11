@@ -85,6 +85,10 @@ extrapolate ::= 'extrapolate' '(' field_word ',' number ')' action => remove_sym
 moving_avg ::= 'moving_average' '(' field_word ',' number ')' action => remove_symbols
                |
                'moving_average' '(' field ',' number ')' action => remove_symbols
+               |
+               'moving_average' '(' field_word ',' 'ASAP' ')' action => remove_symbols
+               |
+               'moving_average' '(' field ',' 'ASAP' ')' action => remove_symbols
 
 all ::= 'all' '(' field_word ')' action => remove_symbols
 
