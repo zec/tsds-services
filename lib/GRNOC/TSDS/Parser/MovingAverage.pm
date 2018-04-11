@@ -9,8 +9,6 @@ use List::MoreUtils qw(all any);
 use Date::Format qw(time2str);
 use Math::FFT qw();
 
-use GRNOC::Log;
-
 # Top-level moving-average function; returns a reference to an array of
 # output (timestamp, value) pairs on success, or undef or an error-message
 # string if there was a problem.
@@ -124,6 +122,10 @@ sub _asap {
 
     # So, our data is regularly-sampled, with no gaps. Get the autocorrelation:
     my $corr = _calc_acf(\@values);
+    # We only _want_ window sizes under a fourth of the series length:
+    my @corr = @$corr;
+    $#corr = max(int(scalar(@values) / 4) - 1, 0);
+    $corr = \@corr;
 
     # Get the peaks of the autocorrelation - they are our candidate window sizes:
     my $candidates = _find_peaks($corr);
@@ -141,7 +143,7 @@ sub _asap {
     my $opt = _search_periodic(\@values, $base_stats, $candidates, $corr, $initial_opt);
 
     # Search bounds for binary search
-    my $hi = max(int(scalar(@values) / 10), 1);
+    my $hi = max(int(scalar(@values) / 4), 1);
     my $lo = $opt->{'lower_bound'};
 
     if ($opt->{'lfi'} >= 0) {
@@ -232,7 +234,8 @@ sub _calc_acf {
 
     # ASAP uses a variance-normalized autocorrelation:
     my $variance = $corr[0];
-    my @normed = map { $_ / $variance } @corr;
+    my @normed = @corr;
+    @normed = map { $_ / $variance } @corr if $variance > 1e-15;
 
     return \@normed;
 }
@@ -321,7 +324,7 @@ sub _search_periodic {
                 $opt{'window'} = $w;
                 $opt{'roughness'} = $Y{'roughness'};
             }
-            $opt{'lower_bound'} = int( max(
+            $opt{'lower_bound'} = max(
                 $opt{'lower_bound'},
                 int( $w * sqrt( (1-$max_acf) / (1-$acf[$w]) ) )
             );
